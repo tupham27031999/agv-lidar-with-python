@@ -489,8 +489,8 @@ class process_data_lidar:
         x=self.x_new_map
         y= self.y_new_map
         angle=self.ang_new_map
-        if int(float(distan_scan_all[1])) == 1:
-            scan_all = scan[(scan[:, 2] < int(float(distan_scan_all[0])))]
+        if distan_scan_all[0] == 1:
+            scan_all = scan[(scan[:, 2] < distan_scan_all[1])]
         else:
             scan_all = scan
         if self.scan_dis == 1:
@@ -653,13 +653,14 @@ class process_data_lidar:
 
                 if self.update_vi_tri_agv_ban_dau == 0 and self.arr_goc0.shape[0] > 50:
                     h, w, _ = self.img0.shape
-                    if self.scan_dis == 1:
-                        h = int(h/2)
-                        w = int(w/2)
+                    # print("self.scan_dis", self.scan_dis)
+                    # if self.scan_dis == 1:
+                    # h = int(h/2)
+                    # w = int(w/2)
                     # if self.add_all_point == 1:
-                    self.img0 = self.map_all[int(self.y_goc - h/2):int(self.y_goc + h/2),
+                    img0 = self.map_all[int(self.y_goc - h/2):int(self.y_goc + h/2),
                                 int(self.x_goc - w / 2):int(self.x_goc + w / 2), :]
-                    black_points = np.argwhere(np.all(self.img0[:, :, :3] == [0, 0, 0], axis=-1))                       
+                    black_points = np.argwhere(np.all(img0[:, :, :3] == [0, 0, 0], axis=-1))                       
                     px = black_points[:, 1]
                     py = black_points[:, 0] 
                     # else:
@@ -694,6 +695,8 @@ class process_data_lidar:
 
                     self.rmse = rmse
                     if rmse != 0:
+                        if rmse > self.rmse1:
+                            self.driver_motor.load_data_sent_drive(int(float(self.convert_data_run_agv["tien_max"])), 0, 0, "distance", 1, self.closest_point_1)
                         
                         # chuyen arr_test ve vi tri self.arr_goc (test ngay lúc trc)
                         new_arr_ok = gicp_lidar.transform_points(arr_test, r, t) 
@@ -760,6 +763,8 @@ class process_data_lidar:
                         #     self.px_check = []
                         #     self.py_check = []
                         #     self.points_check = self.arr_goc0
+                    else:
+                        self.driver_motor.load_data_sent_drive(int(float(self.convert_data_run_agv["tien_max"])), 0, 0, "distance", 1, self.closest_point_1)
                     self.vi_tri_x_agv, self.vi_tri_y_agv = self.translate_point(self.x_goc, self.y_goc, - self.rotation, distance=13)
                     cv2.circle(self.img1, (int(self.vi_tri_x_agv), int(self.vi_tri_y_agv)), 5, (255, 0, 0), -1)
                     self.huong_x = int(self.vi_tri_x_agv + 20 * math.cos(np.pi - self.rotation))
@@ -1080,7 +1085,11 @@ class process_data_lidar:
                 self.check_distan_old = 1
                 self.distance_old = distance_diem_2
             if len(self.convert_data_run_agv["diem_huong"]) != 0:
-                if distance_diem_2 <= 80:
+                if distance_diem_2 <= 30:
+                    if distance_diem_2 < 20:
+                        self.dis_max = dis_max - 100
+                    if distance_diem_2 < 10:
+                        self.dis_max = dis_max - 200
                     self.scan_dis = 1
         # kiem tra huong cua agv den diem huong
         if self.convert_data_run_agv["run_diem_2"] == "OK":
