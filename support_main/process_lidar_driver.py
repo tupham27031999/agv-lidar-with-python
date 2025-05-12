@@ -653,6 +653,9 @@ class process_data_lidar:
 
                 if self.update_vi_tri_agv_ban_dau == 0 and self.arr_goc0.shape[0] > 50:
                     h, w, _ = self.img0.shape
+                    if self.scan_dis == 1:
+                        h = int(h/2)
+                        w = int(w/2)
                     # if self.add_all_point == 1:
                     self.img0 = self.map_all[int(self.y_goc - h/2):int(self.y_goc + h/2),
                                 int(self.x_goc - w / 2):int(self.x_goc + w / 2), :]
@@ -1076,8 +1079,12 @@ class process_data_lidar:
             if distance_diem_2 < number and distance_diem_2 > 2 and self.convert_data_run_agv["run_diem_2"] != "OK":
                 self.check_distan_old = 1
                 self.distance_old = distance_diem_2
+            if len(self.convert_data_run_agv["diem_huong"]) != 0:
+                if distance_diem_2 <= 80:
+                    self.scan_dis = 1
         # kiem tra huong cua agv den diem huong
         if self.convert_data_run_agv["run_diem_2"] == "OK":
+            self.scan_dis = 0
             if len(self.convert_data_run_agv["diem_huong"]) == 0:
                 self.convert_data_run_agv["run_huong"] = "OK"
             else:
@@ -1204,6 +1211,7 @@ class process_data_lidar:
                 if self.done_sub == 1:
                     self.stt_sub = self.stt_sub + 1
                     self.done_sub = 0
+                    self.scan_dis = 0
                 
             else: # đã đi hết danh sách đường đi
                 # nếu là lặp liên tục
