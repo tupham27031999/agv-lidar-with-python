@@ -1,0 +1,47 @@
+{
+    "0": {
+        "point_name": "P0",
+        "point_coord": [
+            2518,
+            2499
+        ],
+        "direction": "có hướng",
+        "alpha": 180
+    },
+    "1": {
+        "point_name": "P1",
+        "point_coord": [
+            2427,
+            2495
+        ],
+        "direction": "không hướng",
+        "alpha": 181
+    },
+    "2": {
+        "point_name": "P2",
+        "point_coord": [
+            2424,
+            2627
+        ],
+        "direction": "không hướng",
+        "alpha": 267
+    },
+    "3": {
+        "point_name": "P3",
+        "point_coord": [
+            2518,
+            2629
+        ],
+        "direction": "không hướng",
+        "alpha": 359
+    },
+    "4": {
+        "point_name": "P4",
+        "point_coord": [
+            2517,
+            2561
+        ],
+        "direction": "có hướng",
+        "alpha": 90
+    }
+}
