@@ -23,7 +23,7 @@
 2	re_max				500
 2	grid_size				5
 2	agv_size				5
-2	distance_max			80
+2	distance_max			70
 2	angle_line				80
 2	host					192.168.11.243
 2	port					5000
@@ -31,4 +31,5 @@
 2	port_lidar				2368
 2	distan_scan_all			10000		0
 2	dis_min				0
-2	dis_max				2000			
+2	dis_max				1000			
+2
