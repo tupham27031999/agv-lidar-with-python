@@ -1088,6 +1088,7 @@ class process_data_lidar:
             if len(self.convert_data_run_agv["diem_huong"]) == 0:
                 self.convert_data_run_agv["run_huong"] = "OK"
             else:
+                print("angle_check",distance, angle_deg)
                 check_angle_distance = "angle"
                 start_point = [int(self.vi_tri_x_agv), int(self.vi_tri_y_agv)]
                 robot_direction = self.convert_data_run_agv["diem_huong_agv"]
