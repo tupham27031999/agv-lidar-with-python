@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import heapq
 from scipy.ndimage import distance_transform_edt
-
+#new
 
 def creat_gird(image, x_min, y_min, point_start, point_end, grid_size=5, agv_size = 2):
     list_points = []
