@@ -34,7 +34,7 @@ for i in range(0,len(data_admin)):
         if data_admin[i][0] == "port_lidar":
             port_lidar = int(float(data_admin[i][1]))
 print("host_lidar", host_lidar)
-print("port_lidar", port_lidar)
+print("port_lidar", port_lidar, port_lidar == 2368)
 UDP_IP = host_lidar
 UDP_PORT = port_lidar
 

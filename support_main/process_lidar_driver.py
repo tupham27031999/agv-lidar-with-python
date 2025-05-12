@@ -32,10 +32,12 @@ if os.name == "nt":
     print("Hệ điều hành là Windows")
     # Đọc file cài đặt cho Windows
     path_admin = path_phan_mem + "/setting/admin_window.csv"
+    on_music = 1
 elif os.name == "posix":
     print("Hệ điều hành là Ubuntu (Linux)")
     # Đọc file cài đặt cho Ubuntu
     path_admin = path_phan_mem + "/setting/admin_ubuntu.csv"
+    on_music = 0
 data_admin = edit_csv_tab.load_all_stt(path_admin)
 
 for i in range(0,len(data_admin)):
@@ -154,7 +156,7 @@ def callback_lui(x_goc, y_goc, px, py, distan_can_vat_can):
             point_vat_can = [closest_point[0], closest_point[1]]
     return point_vat_can
 driver_motor_check = 1
-on_music = 1
+
 class process_data_lidar:
     def __init__(self):
         if on_music == 1:

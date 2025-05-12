@@ -84,7 +84,7 @@ for i in range(0,len(data_admin)):
             host = data_admin[i][1]
         if data_admin[i][0] == "port":
             port = int(float(data_admin[i][1]))
-
+print(host, port, "ggg")
 
 class support_main:
     def __init__(self,window_size,window_size_all,scaling_factor,rmse1,rmse2):

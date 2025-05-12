@@ -2865,7 +2865,7 @@ def send_sent_esp():
         if sent_esp != sent_esp_new:  # Kiểm tra nếu sent_esp có giá trị
             try:
                 # response = requests.post('http://192.168.11.1:5000/py_sent_esp', json={'sent_esp': sent_esp_new})
-                response = requests.post("http://" + host + ":" + port + "/py_sent_esp", json={'sent_esp': sent_esp_new})
+                response = requests.post('http://' + host + ':' + str(port) + '/py_sent_esp', json={'sent_esp': sent_esp_new})
                 if response.status_code == 200:
                     print(f"Đã gửi dữ liệu sent_esp: {sent_esp_new}")
                     sent_esp = sent_esp_new

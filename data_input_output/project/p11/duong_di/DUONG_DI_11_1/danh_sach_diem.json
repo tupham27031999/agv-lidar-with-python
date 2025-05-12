@@ -1,0 +1,38 @@
+{
+    "0": {
+        "point_name": "P0",
+        "point_coord": [
+            2532,
+            2504
+        ],
+        "direction": "có hướng",
+        "alpha": 180
+    },
+    "1": {
+        "point_name": "P1",
+        "point_coord": [
+            2442,
+            2497
+        ],
+        "direction": "không hướng",
+        "alpha": 180
+    },
+    "2": {
+        "point_name": "P2",
+        "point_coord": [
+            2432,
+            2633
+        ],
+        "direction": "không hướng",
+        "alpha": 271
+    },
+    "3": {
+        "point_name": "P3",
+        "point_coord": [
+            2523,
+            2639
+        ],
+        "direction": "không hướng",
+        "alpha": 359
+    }
+}
