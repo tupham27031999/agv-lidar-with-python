@@ -1092,7 +1092,7 @@ class process_data_lidar:
                         self.dis_max = dis_max - 200
                     self.scan_dis = 1
         # kiem tra huong cua agv den diem huong
-        if self.convert_data_run_agv["run_diem_2"] == "OK":
+        if self.convert_data_run_agv["run_diem_2"] == "OK" and self.convert_data_run_agv["run_huong"] != "OK":
             self.scan_dis = 0
             if len(self.convert_data_run_agv["diem_huong"]) == 0:
                 self.convert_data_run_agv["run_huong"] = "OK"
