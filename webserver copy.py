@@ -28,14 +28,12 @@ SAVED_DATA_DIR = path_phan_mem + "/data_input_output"
 PATH_MAPS_DIR = SAVED_DATA_DIR + "/maps"
 PATH_POINTS_DIR = SAVED_DATA_DIR + "/point_lists"
 PATH_PATHS_DIR = SAVED_DATA_DIR + "/path_lists"
-PATH_GRID_LISTS_DIR = SAVED_DATA_DIR + "/grid_lists"
 PATH_LOG_GIAO_TIEP_DIR = SAVED_DATA_DIR + "/log_giao_tiep"
 
 # Create directories if they don't exist
 os.makedirs(PATH_MAPS_DIR, exist_ok=True)
 os.makedirs(PATH_POINTS_DIR, exist_ok=True)
 os.makedirs(PATH_PATHS_DIR, exist_ok=True)
-os.makedirs(PATH_GRID_LISTS_DIR, exist_ok=True)
 os.makedirs(PATH_LOG_GIAO_TIEP_DIR, exist_ok=True)
 
 
@@ -60,7 +58,6 @@ dict_dieu_chinh_vi_tri_agv = {"toa_do_x": 2500, "toa_do_y": 2500, "goc_agv": 0, 
 # Server-side storage for "live" points and paths
 file_diem_da_chon = ""
 file_duong_da_chon = ""
-file_grid_da_chon = ""
 # Format: danh_sach_diem = {"tên điểm": [tọa độ x, tọa độ y, "loại điểm", góc agv]}
 danh_sach_diem = {}
 # Format: danh_sach_duong = {"tên đường": ["tên điểm 1", "tên điểm 2"]}
@@ -71,19 +68,15 @@ list_tien_max = [7000, 6500, 6000, 5500, 5000, 4500, 4000, 3500, 3000, 2500, 200
 list_re_max = [1000, 900, 800, 700, 600, 500, 400, 300]
 
 # detect_scan_an_toan = scan_an_toan.kiem_tra_vat_can()
-# points_color_blue = np.array([[50,500,300],[500,100,200]])
-# points_color_red = [[500,50],[600,250],[600,20],[500,250]]
-
-points_color_blue = np.array([])
-points_color_red = np.array([])
+points_color_blue = np.array([[50,500,300],[500,100,200]])
+points_color_red = [[500,50],[600,250],[600,20],[500,250]]
 
 # --- NEW: Grid Data and Paint Flag ---
-dict_data_grid = {}
-# {
-#     "grid_00": {"name": "00", "vi_tri": [2400, 2400, 2500, 2500], "diem": [2430, 2430], "mau": "yellow", "loai_diem": "duong_di"},
-#     "grid_01": {"name": "01", "vi_tri": [2500, 2500, 2600, 2600], "diem": [2530, 2530], "mau": "yellow", "loai_diem": "duong_di"},
-#     "grid_02": {"name": "02", "vi_tri": [2600, 2600, 2700, 2700], "diem": [2630, 2630], "mau": "yellow", "loai_diem": "duong_di"}
-# }
+dict_data_grid = {
+    "grid_00": {"name": "00", "vi_tri": [2400, 2400, 2500, 2500], "diem": [2430, 2430], "mau": "yellow", "loai_diem": "duong_di"},
+    "grid_01": {"name": "01", "vi_tri": [2500, 2500, 2600, 2600], "diem": [2530, 2530], "mau": "yellow", "loai_diem": "duong_di"},
+    "grid_02": {"name": "02", "vi_tri": [2600, 2600, 2700, 2700], "diem": [2630, 2630], "mau": "yellow", "loai_diem": "duong_di"}
+}
 paint_dict_data_grid = True # New flag to control drawing grids
 
 # --- Signal Communication Variables ---
@@ -95,7 +88,7 @@ thoi_gian_gui_str = "N/A"
 last_send_status_str = "Chưa có tín hiệu để gửi."
 
 
-# points_color_red 
+
 
 def log_communication(log_type, timestamp_str, signal_value):
     """
@@ -137,7 +130,6 @@ list_ban_do = get_available_maps()
 # These will be populated by scanning directories later or can be initialized if needed
 list_danh_sach_diem_da_luu = get_saved_lists(PATH_POINTS_DIR)
 list_danh_sach_duong_da_luu = get_saved_lists(PATH_PATHS_DIR)
-list_danh_sach_grid_da_luu = get_saved_lists(PATH_GRID_LISTS_DIR)
 
 
 def initial_image_setup_task():
@@ -205,11 +197,10 @@ app = Flask(__name__)
 
 @app.route('/')
 def main_web():
-    global list_ban_do, list_danh_sach_diem_da_luu, list_danh_sach_duong_da_luu, list_danh_sach_grid_da_luu
+    global list_ban_do, list_danh_sach_diem_da_luu, list_danh_sach_duong_da_luu
     list_ban_do = get_available_maps()
     list_danh_sach_diem_da_luu = get_saved_lists(PATH_POINTS_DIR)
     list_danh_sach_duong_da_luu = get_saved_lists(PATH_PATHS_DIR)
-    list_danh_sach_grid_da_luu = get_saved_lists(PATH_GRID_LISTS_DIR)
 
     # Ensure default selections are valid if lists are populated
     if not dict_chon_ban_do["ten_ban_do"] and list_ban_do:
@@ -351,24 +342,6 @@ def main_web():
                     </select>
                     <button onclick="loadPathList()">Tải danh sách đường</button>
                 </div>
-
-                <!-- Quản lý Grid -->
-                <div class="function-frame" id="frame-grid-management">
-                    <h4>Quản lý Grid</h4>
-                    <div id="grid-list-container" style="max-height: 150px; overflow-y: auto; border: 1px solid #eee; padding: 5px; margin-bottom: 10px;">
-                        <!-- Grid items will be populated here by JS -->
-                    </div>
-                    <button onclick="openGridModal(null)">Thêm Grid</button>
-
-                    <button onclick="saveGridList()">Lưu Grid</button>
-
-                    <label for="selectSavedGridList">Tải DS grid từ file:</label>
-                    <select id="selectSavedGridList">
-                        { "".join([f'<option value="{val}" {"selected" if val == file_grid_da_chon else ""}>{val}</option>' for val in list_danh_sach_grid_da_luu]) }
-                    </select>
-                    <button onclick="loadGridList()">Tải danh sách Grid</button>
-                </div>
-
             </div>
         </div>
 
@@ -400,50 +373,11 @@ def main_web():
             </div>
         </div>
 
-        <!-- Grid Modal -->
-        <div id="gridModal" class="modal">
-            <div class="modal-content">
-                <h4 id="gridModalTitle">Thêm Grid Mới</h4>
-                <input type="hidden" id="modalOriginalGridName">
-                <label for="modalGridName">Tên Grid:</label>
-                <input type="text" id="modalGridName" required>
-                <label>Vị trí (x1, y1, x2, y2):</label>
-                <div style="display: flex; gap: 5px;">
-                    <input type="number" id="modalGridX1" placeholder="x1" style="width: 25%;">
-                    <input type="number" id="modalGridY1" placeholder="y1" style="width: 25%;">
-                    <input type="number" id="modalGridX2" placeholder="x2" style="width: 25%;">
-                    <input type="number" id="modalGridY2" placeholder="y2" style="width: 25%;">
-                </div>
-                <label>Điểm (x, y) trong Grid:</label>
-                <div style="display: flex; gap: 5px;">
-                    <input type="number" id="modalGridDiemX" placeholder="Điểm X" style="width: 50%;">
-                    <input type="number" id="modalGridDiemY" placeholder="Điểm Y" style="width: 50%;">
-                </div>
-                <label for="modalGridColor">Màu:</label>
-                <select id="modalGridColor">
-                    <option value="yellow">Yellow</option>
-                    <option value="red">Red</option>
-                    <option value="blue">Blue</option>
-                    <option value="green">Green</option>
-                    <option value="purple">Purple</option>
-                    <option value="gray">Gray</option>
-                </select>
-                <label for="modalGridType">Loại:</label>
-                <input type="text" id="modalGridType" placeholder="VD: duong_di">
-                <div class="modal-buttons">
-                    <button onclick="closeGridModal()">Hủy</button>
-                    <button id="deleteGridModalButton" onclick="deleteGridFromModal()" style="display:none; background-color: #dc3545;">Xóa Grid</button>
-                    <button onclick="submitGridModal()">Lưu Grid</button>
-                </div>
-            </div>
-        </div>
-
         <script>
             let viewer;
             // Client-side data stores (using objects for easier lookup by name)
             let clientPointsData = {{}}; // {{ "P1": {{name: "P1", x: 10, y: 20, type: "có hướng", angle: 90, osdOverlay: obj, textOverlay: obj}}, ... }}
             let clientPathsData = {{}};  // {{ "P1_P2": {{name: "P1_P2", p1_name: "P1", p2_name: "P2", osdOverlay: obj, textOverlay: obj}}, ... }}
-            let clientGridData = {{}}; // {{ "grid_00": {{name: "00", vi_tri: [x1,y1,x2,y2], diem: [x,y], ...}}, ...}}
             
             let nextPointNumericId = 1; // For generating default point names like P1, P2
 
@@ -495,21 +429,17 @@ def main_web():
                         sessionStorage.setItem('osdViewerState', JSON.stringify(viewerState));
                         sessionStorage.setItem('clientPointsData', JSON.stringify(clientPointsData));
                         sessionStorage.setItem('clientPathsData', JSON.stringify(clientPathsData));
-                        sessionStorage.setItem('clientGridData', JSON.stringify(clientGridData));
                         sessionStorage.setItem('nextPointNumericId', nextPointNumericId.toString());
                         // Lưu trạng thái của dropdowns
                         sessionStorage.setItem('selectedPointListFile', document.getElementById('selectSavedPointList').value);
                         sessionStorage.setItem('selectedPathListFile', document.getElementById('selectSavedPathList').value);
-                        sessionStorage.setItem('selectedGridListFile', document.getElementById('selectSavedGridList').value);
                         console.log("Saving viewer state:", viewerState);
                         console.log("Saving clientPointsData count:", Object.keys(clientPointsData).length);
                         console.log("Saving clientPathsData count:", Object.keys(clientPathsData).length);
-                        console.log("Saving clientGridData count:", Object.keys(clientGridData).length);
                         console.log("Saving nextPointNumericId:", nextPointNumericId);
                         console.log("Saving selectedPointListFile:", document.getElementById('selectSavedPointList').value);
                         console.log("Saving selectedPathListFile:", document.getElementById('selectSavedPathList').value);
                         console.log("Saving viewer state:", viewerState);
-                        console.log("Saving selectedGridListFile:", document.getElementById('selectSavedGridList').value);
                     }}
                 }});
 
@@ -633,12 +563,10 @@ def main_web():
                 // Khôi phục lựa chọn cho dropdowns
                 const savedSelectedPointList = sessionStorage.getItem('selectedPointListFile');
                 const savedSelectedPathList = sessionStorage.getItem('selectedPathListFile');
-                const savedSelectedGridList = sessionStorage.getItem('selectedGridListFile');
 
                 // --- Khôi phục trạng thái client-side từ sessionStorage ---
                 const savedPointsJSON = sessionStorage.getItem('clientPointsData');
                 const savedPathsJSON = sessionStorage.getItem('clientPathsData');
-                const savedGridJSON = sessionStorage.getItem('clientGridData');
                 const savedNextId = sessionStorage.getItem('nextPointNumericId');
 
                 if (savedPointsJSON) {{ // Nếu có dữ liệu điểm trong session, ưu tiên khôi phục từ đó
@@ -682,24 +610,13 @@ def main_web():
                         nextPointNumericId = parseInt(savedNextId, 10);
                         console.log("Restored nextPointNumericId from sessionStorage:", nextPointNumericId);
                     }}
-
-                    if (savedGridJSON) {{
-                        try {{
-                            clientGridData = JSON.parse(savedGridJSON);
-                            populateGridList();
-                            console.log("Restored clientGridData from sessionStorage. Count:", Object.keys(clientGridData).length);
-                        }} catch (e) {{
-                            console.error("Error parsing clientGridData from sessionStorage:", e);
-                            clientGridData = {{}};
-                        }}
-                    }}
                 }} else {{
                     // Không có dữ liệu điểm trong session, tải mới từ server
                     console.log("No clientPointsData in sessionStorage. Loading current state from server.");
                     loadCurrentState(); 
                 }}
                 // Load initial lists for dropdowns
-                updateSavedFileLists(savedSelectedPointList, savedSelectedPathList, savedSelectedGridList); 
+                updateSavedFileLists(savedSelectedPointList, savedSelectedPathList); 
                 // Start polling for signal status
                 setInterval(fetchSignalStatus, 2000); // Poll every 2 seconds
             }});
@@ -773,91 +690,6 @@ def main_web():
                     .catch(error => console.error('Error fetching AGV state:', error));
             }}
 
-            // --- Chức năng Danh sách Grid ---
-            async function saveGridList() {{
-                const gridName = prompt("Nhập tên cho danh sách Grid:");
-                if (!gridName) {{
-                    alert("Tên danh sách Grid không được để trống.");
-                    return;
-                }}
-
-                // Giả sử 'clientGridData' chứa dữ liệu lưới bạn muốn lưu
-                // Đảm bảo 'clientGridData' là một biến có thể truy cập toàn cục hoặc được truyền đúng cách
-                const gridDataToSave = clientGridData; // Hoặc bất kỳ biến nào chứa dữ liệu lưới của bạn
-
-                try {{
-                    const response = await fetch('/save_grid_list', {{
-                        method: 'POST',
-                        headers: {{
-                            'Content-Type': 'application/json',
-                        }},
-                        body: JSON.stringify({{ gridName: gridName, gridData: gridDataToSave }}),
-                    }});
-                    const result = await response.json();
-                    if (result.status === 'success') {{
-                        alert(result.message);
-                        // Tùy chọn: làm mới danh sách chọn sau khi lưu
-                        updateGridListDropdown(); 
-                    }} else {{
-                        alert("Lỗi khi lưu danh sách Grid: " + result.message);
-                    }}
-                }} catch (error) {{
-                    console.error('Lỗi khi lưu danh sách grid:', error);
-                    alert('Lỗi kết nối hoặc hệ thống khi lưu danh sách Grid.');
-                }}
-            }}
-
-            async function loadGridList() {{
-                const selectElement = document.getElementById('selectSavedGridList');
-                const gridName = selectElement.value;
-
-                if (!gridName) {{
-                    alert("Vui lòng chọn một danh sách Grid để tải.");
-                    return;
-                }}
-
-                const response = await fetch('/load_grid_list', {{
-                    method: 'POST',
-                    headers: {{
-                        'Content-Type': 'application/json',
-                    }},
-                    body: JSON.stringify({{ gridName: gridName }}),
-                }});
-                const result = await response.json();
-                if (result.status === 'success') {{
-                    // Giả sử 'clientGridData' là biến toàn cục để cập nhật
-                    clientGridData = result.gridData; 
-                    alert(`Danh sách Grid '${{gridName}}' đã được tải thành công.`);
-                    
-                    window.location.reload(); // Refresh toàn bộ trang web sau khi thay đổi điểm
-                }} else {{
-                    alert("Lỗi khi tải danh sách Grid: " + result.message);
-                }}
-            }}
-
-            // Hàm để cập nhật dropdown với danh sách grid đã lưu
-            async function updateGridListDropdown() {{
-                try {{
-                    const response = await fetch('/get_grid_lists'); // Gọi route Flask mới
-                    const result = await response.json();
-                    if (result.status === 'success') {{
-                        const selectElement = document.getElementById('selectSavedGridList');
-                        selectElement.innerHTML = '<option value="">-- Chọn --</option>'; // Xóa các tùy chọn hiện có
-                        result.gridLists.forEach(gridName => {{
-                            const option = document.createElement('option');
-                            option.value = gridName;
-                            option.textContent = gridName;
-                            selectElement.appendChild(option);
-                        }});
-                    }}
-                }} catch (error) {{
-                    console.error('Lỗi khi lấy danh sách grid cho dropdown:', error);
-                }}
-            }}
-
-            // Gọi hàm này khi trang được tải để điền vào dropdown
-            document.addEventListener('DOMContentLoaded', updateGridListDropdown);
-
             function updateAGVOnMap(bodyCoordsList, arrowCoordsList) {{ // NEW SIGNATURE
                 if (!viewer || !viewer.isOpen() || !viewer.world.getItemCount() > 0) {{
                     return;
@@ -920,7 +752,7 @@ def main_web():
                 }}
 
                 // --- Draw AGV Arrow (Triangle as Polygon) ---
-                // if (arrowCoordsList && arrowCoordsList.length === 3) // OLD CONDITION
+                // if (arrowCoordsList && arrowCoordsList.length === 3) {{ // OLD CONDITION
                 // BEGIN MODIFICATION: Change condition to handle more than 3 points for filled AGV arrow
                 // Now, `arrowCoordsList` will contain all points to fill the AGV arrow.
                 // So, we just check if the list has any points.
@@ -1047,10 +879,6 @@ def main_web():
                     .then(data => {{
                         if (data.status === 'success') {{
                             clearAllClientDataAndOverlays(); // Clear existing before loading
-                            
-                            clientGridData = data.grid_data || {{}};
-                            populateGridList();
-                            clearAllClientDataAndOverlays(); // Clear existing before loading
                             const serverPoints = data.points_data || {{}};
                             const serverPaths = data.paths_data || {{}};
 
@@ -1088,6 +916,7 @@ def main_web():
                     .then(data => {{
                         console.log("Map selection response:", data);
                         if (data.status === 'success') {{
+                            viewer.open('/full_image.jpg?' + new Date().getTime());
                             clearAllClientDataAndOverlays(); // Clear points/paths
                             alert(`Bản đồ "${"{mapName}"}" đã được tải.`);
                             window.location.reload(); // Refresh toàn bộ trang web sau khi thay đổi điểm
@@ -1103,7 +932,6 @@ def main_web():
                 for (const name in clientPointsData) removePointOverlay(name);
                 for (const name in clientPathsData) removePathOverlay(name);
                 clientPointsData = {{}};
-                clientGridData = {{}};
                 clientPathsData = {{}};
                 nextPointNumericId = 1; // Reset ID counter
             }}
@@ -1865,155 +1693,12 @@ def main_web():
                     select.appendChild(option);
                 }});
             }}
-
-            // --- Grid Management Functions ---
-            function populateGridList() {{
-                const container = document.getElementById('grid-list-container');
-                container.innerHTML = ''; // Clear existing list
-                if (Object.keys(clientGridData).length === 0) {{
-                    container.innerHTML = '<p style="color: #888; text-align: center; font-style: italic;">Không có grid nào.</p>';
-                    return;
-                }}
-                for (const name in clientGridData) {{
-                    const grid = clientGridData[name];
-                    const item = document.createElement('div');
-                    item.style.padding = '4px';
-                    item.style.borderBottom = '1px solid #f0f0f0';
-                    item.style.cursor = 'pointer';
-                    item.style.display = 'flex';
-                    item.style.justifyContent = 'space-between';
-                    item.style.alignItems = 'center';
-                    item.innerHTML = `<span>${{grid.name}}</span> <span style="font-size: 10px; color: #fff; background-color:${{grid.mau}}; padding: 1px 4px; border-radius: 3px;">${{grid.mau}}</span>`;
-                    item.onclick = () => openGridModal(grid);
-                    container.appendChild(item);
-                }}
-            }}
-
-            function openGridModal(gridData) {{
-                const modal = document.getElementById('gridModal');
-                const isEditing = gridData !== null;
-
-                document.getElementById('gridModalTitle').textContent = isEditing ? 'Sửa Grid' : 'Thêm Grid Mới';
-                document.getElementById('modalOriginalGridName').value = isEditing ? gridData.name : '';
-                document.getElementById('modalGridName').value = isEditing ? gridData.name : '';
-                
-                const vi_tri = isEditing ? gridData.vi_tri : [0,0,0,0];
-                document.getElementById('modalGridX1').value = vi_tri[0];
-                document.getElementById('modalGridY1').value = vi_tri[1];
-                document.getElementById('modalGridX2').value = vi_tri[2];
-                document.getElementById('modalGridY2').value = vi_tri[3];
-
-                const diem = isEditing && gridData.diem ? gridData.diem : [0,0];
-                document.getElementById('modalGridDiemX').value = diem[0];
-                document.getElementById('modalGridDiemY').value = diem[1];
-
-                document.getElementById('modalGridColor').value = isEditing ? gridData.mau : 'yellow';
-                document.getElementById('modalGridType').value = isEditing ? gridData.loai_diem : '';
-
-                document.getElementById('deleteGridModalButton').style.display = isEditing ? 'inline-block' : 'none';
-                modal.style.display = 'block';
-            }}
-
-            function closeGridModal() {{
-                document.getElementById('gridModal').style.display = 'none';
-            }}
-
-            function submitGridModal() {{
-                const originalName = document.getElementById('modalOriginalGridName').value;
-                const newName = document.getElementById('modalGridName').value.trim();
-                if (!newName) {{ alert("Tên grid không được để trống."); return; }}
-
-                // Check for name collision if adding new or renaming
-                if ((!originalName || originalName !== newName) && clientGridData[newName]) {{
-                    alert(`Tên grid "${"{newName}"}" đã tồn tại. Vui lòng chọn tên khác.`);
-                    return;
-                }}
-
-                const x1 = parseInt(document.getElementById('modalGridX1').value, 10) || 0;
-                const y1 = parseInt(document.getElementById('modalGridY1').value, 10) || 0;
-                const x2 = parseInt(document.getElementById('modalGridX2').value, 10) || 0;
-                const y2 = parseInt(document.getElementById('modalGridY2').value, 10) || 0;
-
-                const diemX = parseInt(document.getElementById('modalGridDiemX').value, 10);
-                const diemY = parseInt(document.getElementById('modalGridDiemY').value, 10);
-
-                // Client-side validation for diem within vi_tri
-                const minX = Math.min(x1, x2);
-                const maxX = Math.max(x1, x2);
-                const minY = Math.min(y1, y2);
-                const maxY = Math.max(y1, y2);
-
-                if (isNaN(diemX) || isNaN(diemY)) {{
-                    alert("Tọa độ điểm (X, Y) không được để trống.");
-                    return;
-                }}
-
-                if (diemX < minX || diemX > maxX || diemY < minY || diemY > maxY) {{
-                    alert(`Điểm (${{diemX}}, ${{diemY}}) phải nằm trong khung vị trí [${{minX}}, ${{minY}}, ${{maxX}}, ${{maxY}}].`);
-                    return;
-                }}
-
-                const gridDetails = {{
-                    original_name: originalName, // Send original name for server to find which one to update/rename
-                    name: newName,
-                    vi_tri: [x1, y1, x2, y2],
-                    diem: [diemX, diemY], // Add diem here
-                    mau: document.getElementById('modalGridColor').value,
-                    loai_diem: document.getElementById('modalGridType').value.trim()
-                }};
-
-                fetch('/api/update_grid_cell', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify(gridDetails)
-                }})
-                .then(response => response.json())
-                .then(data => {{
-                    if (data.status === 'success') {{
-                        // Update client-side data
-                        if (originalName && originalName !== newName) {{
-                            delete clientGridData[originalName];
-                        }}
-                        clientGridData[newName] = data.updated_grid;
-                        populateGridList();
-                        closeGridModal();
-                        viewer.open('/full_image.jpg?' + new Date().getTime()); // Refresh image to show updated grid
-                        window.location.reload(); // Refresh toàn bộ trang web sau khi thay đổi điểm
-                    }} else {{
-                        alert("Lỗi từ server: " + data.message);
-                    }}
-                }})
-                .catch(error => console.error('Error submitting grid:', error));
-            }}
-
-            function deleteGridFromModal() {{
-                const gridName = document.getElementById('modalOriginalGridName').value;
-                if (gridName && confirm(`Bạn có chắc muốn xóa grid "${"{gridName}"}"?`)) {{
-                    fetch('/api/delete_grid_cell', {{
-                        method: 'POST',
-                        headers: {{ 'Content-Type': 'application/json' }},
-                        body: JSON.stringify({{ name: gridName }})
-                    }})
-                    .then(response => response.json())
-                    .then(data => {{
-                        if (data.status === 'success') {{
-                            delete clientGridData[gridName];
-                            populateGridList();
-                            closeGridModal();
-                            viewer.open('/full_image.jpg?' + new Date().getTime()); // Refresh image
-                        }} else {{
-                            alert("Lỗi xóa grid từ server: " + data.message);
-                        }}
-                    }})
-                    .catch(error => console.error('Error deleting grid:', error));
-                }}
-            }}
         </script>
     </body>
     </html> 
     """
     return html_content
-# get_current_state
+
 @app.route('/full_image.jpg')
 def full_image_route():
     global current_image, image_lock, image_initialized
@@ -2396,48 +2081,9 @@ def convert_color_name_to_bgr(color_name):
         "purple": (128, 0, 128)
     }
     return colors.get(color_name.lower(), (0, 0, 0)) # Default to black if color not found
-def draw_centered_text_on_square(image, text, x1, y1, x2, y2, font_scale=0.5, font_thickness=1, font=cv2.FONT_HERSHEY_SIMPLEX, text_color=(0, 0, 255)):
-    """
-    Vẽ văn bản lên một khung vuông và căn giữa chữ trong khung.
 
-    Args:
-        text (str): Văn bản muốn viết.
-        square_size (int): Kích thước cạnh của khung vuông (ví dụ: 300 cho 300x300 pixel).
-        font_scale (float): Tỉ lệ kích thước font.
-        font_thickness (int): Độ dày nét chữ.
-        font (int): Kiểu font từ cv2 (ví dụ: cv2.FONT_HERSHEY_SIMPLEX).
-        text_color (tuple): Màu của chữ dưới dạng BGR (ví dụ: (0, 0, 255) cho màu đỏ).
-        background_color (tuple): Màu nền của khung vuông (ví dụ: (255, 255, 255) cho màu trắng).
-
-    Returns:
-        np.array: Hình ảnh khung vuông với văn bản đã được vẽ.
-    """
-    # 2. Tính toán kích thước của văn bản
-    # getTextSize trả về (width, height) của văn bản và baseline (đường cơ sở)
-    text_size = cv2.getTextSize(text, font, font_scale, font_thickness)[0]
-    text_width, text_height = text_size[0], text_size[1]
-
-    # 3. Tính toán tọa độ để căn giữa văn bản
-    # Tâm của khung vuông
-    center_x = int(x2-x1) // 3
-    center_y = int(y2-y1) // 2
-
-    # Tọa độ góc trên bên trái của văn bản để nó được căn giữa
-    # (x_start, y_start) của cv2.putText là góc dưới bên trái của văn bản
-    # Do đó, cần điều chỉnh y_start để nó là đường cơ sở
-    x_start = center_x
-    y_start = center_y
-
-    # Đảm bảo tọa độ không nằm ngoài ảnh
-    if x_start < 0: x_start = 0
-    if y_start < text_height: y_start = text_height # Đảm bảo y_start không quá nhỏ
-    print(x1,x_start, y1,y_start)
-    # 4. Viết chữ lên khung vuông
-    cv2.putText(image, text, (int(x1+x_start), int(y1+y_start)), font, font_scale, text_color, font_thickness, cv2.LINE_AA)
-
-    return image
 def update_img():
-    global danh_sach_diem, danh_sach_duong, current_image, current_image0, paint_dict_data_grid
+    global danh_sach_diem, danh_sach_duong, current_image, current_image0
     # --- Draw points and paths on current_image ---
     with image_lock:
         img_to_draw_on = current_image0.copy() # Start with the base map
@@ -2450,30 +2096,12 @@ def update_img():
             for grid_name, grid_data in dict_data_grid.items():
                 vi_tri = grid_data.get("vi_tri")
                 mau_str = grid_data.get("mau", "gray") # Default to gray if color not specified
-                name = grid_data.get("name")
-                diem = grid_data.get("diem") # Get diem
-
+                
                 if vi_tri and len(vi_tri) == 4:
                     x1, y1, x2, y2 = vi_tri
-                    number = 2
                     color_bgr = convert_color_name_to_bgr(mau_str)
-                    
                     # Draw a filled rectangle on the overlay
-                    cv2.rectangle(overlay, (x1+number, y1+number), (x2-number, y2-number), color_bgr, -1)
-                    
-                    # Draw the grid name
-                    x_text_pos = int(x1 + (x2 - x1) * 0.1) # Adjust text position
-                    y_text_pos = int(y1 + (y2 - y1) * 0.2) # Adjust text position
-                    cv2.putText(img_to_draw_on, name, (x_text_pos, y_text_pos),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1, cv2.LINE_AA) # Magenta text
-
-                    # Draw the 'diem' point if it exists
-                    if diem and len(diem) == 2:
-                        diemX, diemY = diem
-                        # Draw a small circle for the 'diem'
-                        cv2.circle(img_to_draw_on, (int(diemX), int(diemY)), 2, (0, 0, 0), -1) # Black circle, radius 5
-                        cv2.putText(img_to_draw_on, name, (int(diemX) + 8, int(diemY) + 5),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0, 0, 0), 1, cv2.LINE_AA) # Black text for diem coords
+                    cv2.rectangle(overlay, (x1, y1), (x2, y2), color_bgr, -1)
             
             # Blend the overlay with the main image
             img_to_draw_on = cv2.addWeighted(overlay, alpha, img_to_draw_on, 1 - alpha, 0)
@@ -2506,88 +2134,22 @@ def update_img():
 def get_saved_file_lists_route():
     point_files = get_saved_lists(PATH_POINTS_DIR)
     path_files = get_saved_lists(PATH_PATHS_DIR)
-    grid_files = get_saved_lists(PATH_GRID_LISTS_DIR)
     return jsonify({
         "status": "success",
         "point_lists": point_files,
-        "path_lists": path_files,
-        "grid_lists": grid_files
+        "path_lists": path_files
     })
 
 @app.route('/get_current_state')
 def get_current_state_route():
     global danh_sach_diem, danh_sach_duong
-    global dict_data_grid
     print(f"Server sending current state. Points count: {len(danh_sach_diem)}, Paths count: {len(danh_sach_duong)}")
     print(danh_sach_diem, danh_sach_duong)
     return jsonify({
         "status": "success",
         "points_data": danh_sach_diem,
-        "paths_data": danh_sach_duong,
-        "grid_data": dict_data_grid
+        "paths_data": danh_sach_duong
     })
-
-# --- NEW: Grid Management Endpoints ---
-@app.route('/api/update_grid_cell', methods=['POST'])
-def update_grid_cell_route():
-    global dict_data_grid
-    data = request.get_json()
-    original_name = data.get('original_name')
-    new_name = data.get('name')
-    vi_tri = data.get("vi_tri", [0, 0, 0, 0])
-    diem = data.get("diem") # Get diem
-
-    if not new_name:
-        return jsonify({"status": "error", "message": "Tên grid không được để trống."}), 400
-
-    # Check for name collision if renaming
-    if original_name and original_name != new_name and new_name in dict_data_grid:
-        return jsonify({"status": "error", "message": f"Tên grid '{new_name}' đã tồn tại."}), 409
-
-    # Server-side validation for diem within vi_tri
-    if diem and len(diem) == 2:
-        x1, y1, x2, y2 = vi_tri
-        diemX, diemY = diem
-        minX, maxX = min(x1, x2), max(x1, x2)
-        minY, maxY = min(y1, y2), max(y1, y2)
-
-        if not (minX <= diemX <= maxX and minY <= diemY <= maxY):
-            return jsonify({"status": "error", "message": f"Điểm ({diemX}, {diemY}) phải nằm trong khung vị trí [{minX}, {minY}, {maxX}, {maxY}]."}), 400
-    else:
-        return jsonify({"status": "error", "message": "Dữ liệu 'diem' không hợp lệ."}), 400
-
-
-    # Remove old entry if it's a rename
-    if original_name and original_name in dict_data_grid and original_name != new_name:
-        del dict_data_grid[original_name]
-
-    # Create new grid data structure
-    updated_grid_data = {
-        "name": new_name,
-        "vi_tri": vi_tri,
-        "diem": diem, # Add diem here
-        "mau": data.get("mau", "gray"),
-        "loai_diem": data.get("loai_diem", "")
-    }
-
-    dict_data_grid[new_name] = updated_grid_data
-    update_img() # Redraw the image with the new grid data
-    print(f"Updated grid data: {dict_data_grid}")
-    return jsonify({"status": "success", "message": "Grid cell updated.", "updated_grid": updated_grid_data}), 200
-
-@app.route('/api/delete_grid_cell', methods=['POST'])
-def delete_grid_cell_route():
-    global dict_data_grid
-    data = request.get_json()
-    grid_name = data.get('name')
-
-    if grid_name and grid_name in dict_data_grid:
-        del dict_data_grid[grid_name]
-        update_img() # Redraw the image without the deleted grid
-        print(f"Deleted grid: {grid_name}")
-        return jsonify({"status": "success", "message": "Grid cell deleted."}), 200
-    
-    return jsonify({"status": "error", "message": "Grid cell not found."}), 404
 
 
 # --- Signal Communication Endpoints ---
@@ -2732,61 +2294,7 @@ def get_agv_state_route():
         "points_red": red_points_list
     }), 200
 
-# --- Xử lý Danh sách Grid (GRID LISTS) ---
-@app.route('/save_grid_list', methods=['POST'])
-def save_grid_list():
-    try:
-        data = request.json
-        grid_data = data.get('gridData')
-        grid_name = data.get('gridName')
 
-        if not grid_data or not grid_name:
-            return jsonify({"status": "error", "message": "Thiếu dữ liệu gridData hoặc gridName"}), 400
-
-        file_path = os.path.join(PATH_GRID_LISTS_DIR, f"{grid_name}.json")
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(grid_data, f, ensure_ascii=False, indent=4)
-        print(f"Danh sách Grid '{grid_name}' đã được lưu thành công.")
-        return jsonify({"status": "success", "message": f"Danh sách Grid '{grid_name}' đã được lưu."})
-    except Exception as e:
-        print(f"Lỗi khi lưu danh sách Grid: {e}")
-        return jsonify({"status": "error", "message": f"Lỗi khi lưu danh sách Grid: {e}"}), 500
-
-@app.route('/load_grid_list', methods=['POST'])
-def load_grid_list():
-    global dict_data_grid
-    try:
-        data = request.json
-        grid_name = data.get('gridName')
-
-        if not grid_name:
-            return jsonify({"status": "error", "message": "Thiếu gridName"}), 400
-
-        file_path = os.path.join(PATH_GRID_LISTS_DIR, f"{grid_name}.json")
-        if not os.path.exists(file_path):
-            return jsonify({"status": "error", "message": f"Không tìm thấy danh sách Grid '{grid_name}'"}), 404
-
-        with open(file_path, 'r', encoding='utf-8') as f:
-            grid_data = json.load(f)
-        
-        dict_data_grid = grid_data
-        print("grid_data", grid_data, dict_data_grid)
-        update_img()
-        print(f"Danh sách Grid '{grid_name}' đã được tải thành công.")
-        return jsonify({"status": "success", "gridData": grid_data}), 200
-    except Exception as e:
-        print(f"Lỗi khi tải danh sách Grid: {e}")
-        return jsonify({"status": "error", "message": f"Lỗi khi tải danh sách Grid: {e}"}), 500
-
-# Thêm route mới để lấy danh sách grid đã lưu cho dropdown
-@app.route('/get_grid_lists', methods=['GET'])
-def get_grid_lists_route():
-    try:
-        grid_lists = get_saved_lists(PATH_GRID_LISTS_DIR)
-        return jsonify({"status": "success", "gridLists": grid_lists})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-    
 # --- Luồng cập nhật vị trí AGV tự động ---
 def auto_update_agv_position_task():
     global dict_dieu_chinh_vi_tri_agv, image_lock, IMG_WIDTH, IMG_HEIGHT
@@ -2872,3 +2380,7 @@ if __name__ == '__main__':
     #     print("Flask server starting. Open http://localhost:5000 in your browser.")
 
     app.run(debug=True, host=host, port=port, use_reloader=True)
+# agv_signals_to_pc get_agv_state clientPointsData updateAGVOnMap updateAGVOnMap checkResize 25
+# agvOverlayElement isinstance img_to_draw_on maxZoomPixelRatio constrainDuringPan AGV_HEIGHT_IMG_PIXELS 
+# updateAGVOnMap sessionStorage setInterval LOGGING osdViewerState deg osdAgvOverlay viewer
+# OpenSeadragon agvOverlayWidthNormalized osdAgvImageOverlay updateAGVOnMap bodyCoordsList 

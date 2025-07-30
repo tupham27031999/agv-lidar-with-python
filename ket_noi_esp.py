@@ -13,6 +13,7 @@ path_py_sent_esp = remove.tao_folder(path_data_input_output + "/py_sent_esp")
 sent_data = ""
 sent_data_new = ""
 connect_esp = 1
+check_connect_esp = False
 input_esp =  {"IN1":0,"IN2":0,"IN3":0,"IN4":0,"IN5":0,"IN6":0,"IN7":0,"IN8":0,"IN9":0,"IN10":0,"IN11":0,"IN12":0}
 remove.remove_all_folder_in_folder(path_esp_sent_py)
 
@@ -285,12 +286,13 @@ def esp_sent_py():
 
 
 def python_esp32():
-    global sent_data,sent_data_new, connected, input_esp
+    global sent_data,sent_data_new, connected, input_esp, check_connect_esp
     py_esp = Python_Esp()
     py_esp.khai_bao_serial()
 
     while True:
         input_esp = py_esp.input_esp
+        check_connect_esp = py_esp.connected
         if connect_esp == 0:
             py_esp.close_serial()
             break
