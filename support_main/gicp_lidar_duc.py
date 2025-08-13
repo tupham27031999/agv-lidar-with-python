@@ -24,7 +24,8 @@ def draw_points_on_image(points, image, color):
         cv2.circle(image, (int(point[0]), int(point[1])), 1, color, -1)
 
 
-def gicp(points1, points2, threshold=10, trans_init=np.eye(4), radius=0.1, max_nn=30, max_iteration=200, voxel_size=1):
+
+def gicp(points1, points2, threshold=10, trans_init=np.eye(4), radius=0.1, max_nn=30, max_iteration=2000, voxel_size=1):
     ''' 
         voxel_size_old = 0.1 | đang test là 2: tạo 1 khung vuông 2x2 và gộp các điểm trong khung vuông
         max_iteration: số lần lặp tối đa
@@ -37,9 +38,11 @@ def gicp(points1, points2, threshold=10, trans_init=np.eye(4), radius=0.1, max_n
         có thể điều chỉnh threshold = 5
         
     '''
-    # Chuyển đổi dữ liệu LIDAR thành PointCloud của Open3D
-    source_pcd = lidar_to_point_cloud(points1)
-    target_pcd = lidar_to_point_cloud(points2)
+    # # Chuyển đổi dữ liệu LIDAR thành PointCloud của Open3D
+    # source_pcd = lidar_to_point_cloud(points1)
+    # target_pcd = lidar_to_point_cloud(points2)
+    source_pcd = points1
+    target_pcd = points2
 
     # Thực hiện downsampling cho source_pcd và target_pcd
     source_pcd = downsample_point_cloud(source_pcd, voxel_size)
@@ -63,14 +66,14 @@ def gicp(points1, points2, threshold=10, trans_init=np.eye(4), radius=0.1, max_n
         o3d.pipelines.registration.TransformationEstimationForGeneralizedICP(),
         criteria)
     
-    # return reg_p2p.inlier_rmse, reg_p2p.transformation
+    return reg_p2p.inlier_rmse, reg_p2p.transformation
     # In ra ma trận chuyển đổi
-    transformation = reg_p2p.transformation
+    # transformation = reg_p2p.transformation
 
-    rmse = reg_p2p.inlier_rmse
-    # Trích xuất ma trận xoay và ma trận tịnh tiến
-    r = transformation[:3, :3]
-    t = transformation[:3, 3]
+    # rmse = reg_p2p.inlier_rmse
+    # # Trích xuất ma trận xoay và ma trận tịnh tiến
+    # r = transformation[:3, :3]
+    # t = transformation[:3, 3]
 
     
     

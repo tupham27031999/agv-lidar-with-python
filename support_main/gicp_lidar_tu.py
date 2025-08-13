@@ -24,7 +24,7 @@ def draw_points_on_image(points, image, color):
         cv2.circle(image, (int(point[0]), int(point[1])), 1, color, -1)
 
 
-def gicp(points1, points2, threshold=10, trans_init=np.eye(4), radius=0.1, max_nn=30, max_iteration=200, voxel_size=1):
+def gicp(points1, points2, threshold=10, trans_init=np.eye(4), radius=0.1, max_nn=30, max_iteration=2000, voxel_size=1):
     ''' 
         voxel_size_old = 0.1 | đang test là 2: tạo 1 khung vuông 2x2 và gộp các điểm trong khung vuông
         max_iteration: số lần lặp tối đa
@@ -74,7 +74,7 @@ def gicp(points1, points2, threshold=10, trans_init=np.eye(4), radius=0.1, max_n
 
     
     
-    # return rmse, r, t
+    return rmse, r, t
 
 def transform_points(points, rotation_matrix, translation_vector):
     """
