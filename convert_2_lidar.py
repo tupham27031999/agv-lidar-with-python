@@ -101,7 +101,7 @@ def transform_lidar_points(scan_data_lidar, lidar_pos_on_agv, lidar_orientation_
 
     # 4. Tịnh tiến điểm theo vị trí lắp đặt của Lidar (vào hệ AGV)
     x_agv = x_rotated + lidar_pos_on_agv[0]
-    y_agv = y_rotated + lidar_pos_on_agv[1]
+    y_agv = - y_rotated + lidar_pos_on_agv[1]
 
     # Ghép các cột x_agv, y_agv, signal lại
     # Lưu ý thứ tự: (x, y, signal)

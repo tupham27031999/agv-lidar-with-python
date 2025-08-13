@@ -12,6 +12,8 @@ from webserver import app
 import webbrowser
 import driver_control_input
 import convert_2_lidar
+import detect_gicp
+import open3d as o3d
 
 
 
@@ -197,25 +199,36 @@ class support_main:
         #     scan_alpha_2 = np.load(path_folder_scan_lidar2 + "/scan_"+ str(self.stt_scan) +".npy")
         
         if self.stt_scan < len(list_data3):
-            scan_alpha_3 = np.load(path_folder_scan_lidar3 + "/scan_"+ str(self.stt_scan) +".npy")
+            scan_alpha_1 = np.load(path_folder_scan_lidar1 + "/Scan_data_"+ str(self.stt_scan) +".npy")
             self.stt_scan = self.stt_scan + 1
+            # self.stt_scan = 5
         else:
             self.connect_while = False
             self.stt_scan = self.stt_scan - 1
-            scan_alpha_3 = np.load(path_folder_scan_lidar3 + "/scan_"+ str(self.stt_scan) +".npy")
+            scan_alpha_1 = np.load(path_folder_scan_lidar1 + "/Scan_data_"+ str(self.stt_scan) +".npy")
 
         # scan, _ = self.load_data_lidar()
 
         # scan_xy, scan1, scan2 = convert_2_lidar.convert_scan_lidar(scan1_data_example=scan_alpha_1, 
         #                                                              scan2_data_example=scan_alpha_2, 
         #                                                              scaling_factor = self.scaling_factor)
-        scan_xy, scan1, scan2 = convert_2_lidar.convert_scan_lidar(scan1_data_example=scan_alpha_3, 
-                                                                    scan2_data_example=scan_alpha_3, 
-                                                                    scaling_factor = self.scaling_factor,
+        scan_xy, scan1, scan2 = convert_2_lidar.convert_scan_lidar(scan1_data_example=scan_alpha_1, 
+                                                                    scan2_data_example=scan_alpha_1, 
+                                                                    scaling_factor = 1,
                                                                     lidar1_orient_deg = 0,
                                                                     lidar2_orient_deg = 0,
                                                                     agv_w=0,
                                                                     agv_l=0)
+        scan_xy = detect_gicp.remove_duplicate_points(scan_xy)
+        # print(scan_xy.shape)
+
+        # scan_xy, scan1, scan2 = convert_2_lidar.convert_scan_lidar(scan1_data_example=scan_alpha_3, 
+        #                                                             scan2_data_example=scan_alpha_3, 
+        #                                                             scaling_factor = 1,
+        #                                                             lidar1_orient_deg = 0,
+        #                                                             lidar2_orient_deg = 0,
+        #                                                             agv_w=0,
+        #                                                             agv_l=0)
 
         # scan, _ = self.load_data_lidar()
         # print("scan = ", scan, scan0.shape)
@@ -454,7 +467,9 @@ class support_main:
             name_map_to_save = self.current_map_name_input.strip()
             print(f"Đang lưu bản đồ với tên: {name_map_to_save}.npy")
             if self.kiem_tra_connect["process_lidar"] == "on" and hasattr(self, 'process_lidar'):
-                self.process_lidar.save_current_map(name_map_to_save, PATH_MAPS_DIR)
+                self.save_current_map(name_map_to_save, PATH_MAPS_DIR, self.process_lidar.map_all)
+                self.save_mask_map(name_map_to_save, PATH_MAPS_DIR, self.process_lidar.mask_map_all)
+                self.save_point_cloud(name_map_to_save, PATH_MAPS_DIR, self.process_lidar.global_map)
                 # Cập nhật danh sách bản đồ trên webserver
                 if hasattr(webserver, 'get_available_maps') and callable(webserver.get_available_maps):
                     webserver.list_ban_do = webserver.get_available_maps()
@@ -468,7 +483,104 @@ class support_main:
         else:
             print("Tên bản đồ không được để trống.")
             # Có thể hiển thị thông báo lỗi trên cửa sổ "Save Map" (cần vẽ thêm)
+    def save_current_map(self, map_name, save_path_dir, map_all):
+        """
+        Lưu self.map_all (3 kênh BGR) vào file .npy.
+        Args:
+            map_name (str): Tên của bản đồ (không bao gồm phần mở rộng .npy).
+            save_path_dir (str): Đường dẫn đến thư mục để lưu bản đồ.
+        """
+        if not map_name:
+            print("Lỗi: Tên bản đồ rỗng. Không thể lưu.")
+            return
+        if not os.path.exists(save_path_dir):
+            try:
+                os.makedirs(save_path_dir, exist_ok=True)
+                print(f"Đã tạo thư mục: {save_path_dir}")
+            except OSError as e:
+                print(f"Lỗi tạo thư mục {save_path_dir}: {e}")
+                return
 
+        file_path = os.path.join(save_path_dir, f"{map_name}.npy")
+        
+        if map_all.shape[2] >= 3: # Đảm bảo có ít nhất 3 kênh
+            map_to_save = map_all # Lấy 3 kênh đầu tiên (giả sử là BGR)
+        else:
+            print(f"Lỗi: map_all không có đủ 3 kênh màu: {map_all.shape}")
+            return
+        try:
+            np.save(file_path, map_to_save)
+            print(f"Bản đồ đã được lưu thành công vào: {file_path}")
+        except Exception as e:
+            print(f"Lỗi khi lưu bản đồ vào {file_path}: {e}")
+    def save_mask_map(self, map_name, save_path_dir, mask_map_array):
+        """
+        Lưu mảng NumPy mask_map_array vào một tệp tin nén .npz.
+
+        Args:
+            file_path (str): Đường dẫn tệp tin để lưu, ví dụ: "data/mask_map.npz".
+            mask_map_array (np.ndarray): Mảng NumPy cần lưu.
+        """
+        if not map_name:
+            print("Lỗi: Tên bản đồ rỗng. Không thể lưu.")
+            return
+        if not os.path.exists(save_path_dir):
+            try:
+                os.makedirs(save_path_dir, exist_ok=True)
+                print(f"Đã tạo thư mục: {save_path_dir}")
+            except OSError as e:
+                print(f"Lỗi tạo thư mục {save_path_dir}: {e}")
+                return
+
+        file_path = os.path.join(save_path_dir, f"{map_name}.npz")
+        try:
+            np.savez_compressed(file_path, mask_map=mask_map_array)
+            print(f"Đã lưu mask map thành công vào: {file_path}")
+        except Exception as e:
+            print(f"Lỗi khi lưu mask map: {e}")
+    def save_point_cloud(self, map_name, save_path_dir, point_cloud):
+        """
+        Lưu đối tượng PointCloud vào tệp tin .pcd.
+
+        Args:
+            file_path (str): Đường dẫn tệp tin để lưu, ví dụ: "data/my_cloud.pcd".
+            point_cloud (o3d.geometry.PointCloud): Đối tượng đám mây điểm cần lưu.
+        """
+        if not map_name:
+            print("Lỗi: Tên bản đồ rỗng. Không thể lưu.")
+            return
+        if not os.path.exists(save_path_dir):
+            try:
+                os.makedirs(save_path_dir, exist_ok=True)
+                print(f"Đã tạo thư mục: {save_path_dir}")
+            except OSError as e:
+                print(f"Lỗi tạo thư mục {save_path_dir}: {e}")
+                return
+
+        file_path = os.path.join(save_path_dir, f"{map_name}.pcd")
+        try:
+            o3d.io.write_point_cloud(file_path, point_cloud)
+            print(f"Đã lưu đám mây điểm thành công vào: {file_path}")
+        except Exception as e:
+            print(f"Lỗi khi lưu đám mây điểm: {e}")
+
+    def load_point_cloud(self, file_path):
+        """
+        Đọc tệp tin .pcd và trả về đối tượng PointCloud.
+
+        Args:
+            file_path (str): Đường dẫn tệp tin .pcd để đọc.
+
+        Returns:
+            o3d.geometry.PointCloud: Đối tượng đám mây điểm đã đọc.
+        """
+        try:
+            point_cloud = o3d.io.read_point_cloud(file_path)
+            print(f"Đã đọc thành công đám mây điểm từ: {file_path}")
+            return point_cloud
+        except Exception as e:
+            print(f"Lỗi khi đọc đám mây điểm: {e}")
+            return None
     def display_save_map_window(self):
         if not self.is_saving_map_mode:
             return

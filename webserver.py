@@ -14,14 +14,24 @@ import io # Để làm việc với image bytes in memory
 import scan_an_toan
 import math
 import path
+from support_main.lib_main import edit_csv_tab
 
 path_phan_mem = path.path_phan_mem
 path_admin = path_phan_mem + "/setting/admin_window.csv"
 
+
+data_admin = edit_csv_tab.load_all_stt(path_admin)
+for i in range(0,len(data_admin)):
+    if len(data_admin[i]) > 1:
+        if data_admin[i][0] == "window_size": # kích thước ảnh check map
+            window_size = int(float(data_admin[i][1]))
+        if data_admin[i][0] == "window_size_all": # kich thuoc ảnh tổng
+            window_size_all = int(float(data_admin[i][1]))
+
 # --- Configuration ---
 AGV_TITLE = "AGV 1"
-IMG_WIDTH = 5000  # Default canvas width if no map is loaded
-IMG_HEIGHT = 5000 # Default canvas height if no map is loaded
+IMG_WIDTH = window_size_all  # Default canvas width if no map is loaded
+IMG_HEIGHT = window_size_all # Default canvas height if no map is loaded
 
 # Directories for saving data and maps
 SAVED_DATA_DIR = path_phan_mem + "/data_input_output"
@@ -80,9 +90,9 @@ points_color_red = np.array([])
 # --- NEW: Grid Data and Paint Flag ---
 dict_data_grid = {}
 # {
-#     "grid_00": {"name": "00", "vi_tri": [2400, 2400, 2500, 2500], "diem": [2430, 2430], "mau": "yellow", "loai_diem": "duong_di"},
-#     "grid_01": {"name": "01", "vi_tri": [2500, 2500, 2600, 2600], "diem": [2530, 2530], "mau": "yellow", "loai_diem": "duong_di"},
-#     "grid_02": {"name": "02", "vi_tri": [2600, 2600, 2700, 2700], "diem": [2630, 2630], "mau": "yellow", "loai_diem": "duong_di"}
+#     "grid_00": {"name": "0.0", "vi_tri": [2400, 2400, 2500, 2500], "diem": [2430, 2430], "mau": "yellow", "loai_diem": "duong_di"},
+#     "grid_01": {"name": "0.1", "vi_tri": [2500, 2500, 2600, 2600], "diem": [2530, 2530], "mau": "yellow", "loai_diem": "duong_di"},
+#     "grid_02": {"name": "0.2", "vi_tri": [2600, 2600, 2700, 2700], "diem": [2630, 2630], "mau": "yellow", "loai_diem": "duong_di"}
 # }
 paint_dict_data_grid = True # New flag to control drawing grids
 
@@ -1058,15 +1068,16 @@ def main_web():
                             for (const name in serverPoints) {{
                                 const pArray = serverPoints[name];
                                 clientPointsData[name] = {{ name: name, x: pArray[0], y: pArray[1], type: pArray[2], angle: pArray[3], osdOverlay: null, textOverlay: null }};
-                                drawPointOnOSD(clientPointsData[name]);
-                            }}
+                                // drawPointOnOSD(clientPointsData[name]);
+                                }}
                             console.log("clientPathsData for :", clientPathsData);
                             // Then load paths (which depend on points)
                             for (const name in serverPaths) {{
                                 const pArray = serverPaths[name];
                                 if(clientPointsData[pArray[0]] && clientPointsData[pArray[1]]) {{ 
                                     clientPathsData[name] = {{ name: name, p1_name: pArray[0], p2_name: pArray[1], osdOverlay: null, textOverlay: null }}; 
-                                drawPathOnOSD(clientPathsData[name]); }}
+                                // drawPathOnOSD(clientPathsData[name]); 
+                                }}
                             }}
                             console.log("clientPathsData for :", clientPathsData);
                         }}
@@ -1078,25 +1089,25 @@ def main_web():
                 if (!mapName) {{ alert("Vui lòng chọn một bản đồ."); return; }}
                 
                 // Clear current points and paths when map changes
-                if (confirm("Đổi bản đồ sẽ xóa các điểm và đường hiện tại trên giao diện. Bạn có muốn tiếp tục?")) {{
-                    fetch('/confirm_map_update', {{
-                        method: 'POST',
-                        headers: {{ 'Content-Type': 'application/json' }},
-                        body: JSON.stringify({{ ten_ban_do: mapName, update: 1 }})
-                    }})
-                    .then(response => response.json())
-                    .then(data => {{
-                        console.log("Map selection response:", data);
-                        if (data.status === 'success') {{
-                            clearAllClientDataAndOverlays(); // Clear points/paths
-                            alert(`Bản đồ "${"{mapName}"}" đã được tải.`);
-                            window.location.reload(); // Refresh toàn bộ trang web sau khi thay đổi điểm
-                        }} else {{
-                            alert("Lỗi khi cập nhật bản đồ: " + data.message);
-                        }}
-                    }})
-                    .catch(error => console.error('Error confirming map selection:', error));
-                }}
+                //if (confirm("Đổi bản đồ sẽ xóa các điểm và đường hiện tại trên giao diện. Bạn có muốn tiếp tục?")) {{
+                fetch('/confirm_map_update', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{ ten_ban_do: mapName, update: 1 }})
+                }})
+                .then(response => response.json())
+                .then(data => {{
+                    console.log("Map selection response:", data);
+                    if (data.status === 'success') {{
+                        clearAllClientDataAndOverlays(); // Clear points/paths
+                        alert(`Bản đồ "${"{mapName}"}" đã được tải.`);
+                        window.location.reload(); // Refresh toàn bộ trang web sau khi thay đổi điểm
+                    }} else {{
+                        alert("Lỗi khi cập nhật bản đồ: " + data.message);
+                    }}
+                }})
+                .catch(error => console.error('Error confirming map selection:', error));
+                // }}
             }}
             
             function clearAllClientDataAndOverlays() {{
@@ -1530,12 +1541,12 @@ def main_web():
                 svgOverlayEl.setAttribute("viewBox", `0 0 ${"{imgWidth}"} ${"{imgHeight}"}`);
                 svgOverlayEl.style.pointerEvents = "none"; // Allow clicks to pass through
 
-                lineEl.setAttribute("x1", p1.x);
-                lineEl.setAttribute("y1", p1.y);
-                lineEl.setAttribute("x2", p2.x);
-                lineEl.setAttribute("y2", p2.y);
-                lineEl.setAttribute("stroke", "yellow");
-                lineEl.setAttribute("stroke-width", "3"); // Adjust stroke width as needed (image pixels)
+                // lineEl.setAttribute("x1", p1.x);
+                // lineEl.setAttribute("y1", p1.y);
+                // lineEl.setAttribute("x2", p2.x);
+                // lineEl.setAttribute("y2", p2.y);
+                // lineEl.setAttribute("stroke", "yellow");
+                // lineEl.setAttribute("stroke-width", "3"); // Adjust stroke width as needed (image pixels)
                 
                 svgOverlayEl.appendChild(lineEl);
                 
@@ -2069,6 +2080,7 @@ def confirm_map_update_route():
         if data['update'] == 1:
             new_map_name = data['ten_ban_do']
             map_path = os.path.join(PATH_MAPS_DIR, new_map_name)
+            print(new_map_name, map_path)
             loaded_successfully = False
             if os.path.exists(map_path):
                 try:
@@ -2091,6 +2103,7 @@ def confirm_map_update_route():
                             current_image0 = img_to_load
                         dict_chon_ban_do['ten_ban_do'] = new_map_name
                         dict_chon_ban_do['update'] = 1 # Reset flag after processing
+                        print(f"Server loaded new map: {dict_chon_ban_do}")
                         # Clear points and paths on server when map changes
                         danh_sach_diem = {}
                         danh_sach_duong = {}
@@ -2439,6 +2452,7 @@ def draw_centered_text_on_square(image, text, x1, y1, x2, y2, font_scale=0.5, fo
 def update_img():
     global danh_sach_diem, danh_sach_duong, current_image, current_image0, paint_dict_data_grid
     # --- Draw points and paths on current_image ---
+    print("jjjjjjjjjjjjj")
     with image_lock:
         img_to_draw_on = current_image0.copy() # Start with the base map
 
@@ -2486,7 +2500,16 @@ def update_img():
             cv2.circle(img_to_draw_on, (int(px), int(py)), 8, (255, 0, 0), -1) # BGR: Red, radius 8
             # Draw point name
             cv2.putText(img_to_draw_on, name, (int(px) + 10, int(py) + 5),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 255), 1, cv2.LINE_AA) # White text
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 255), 1, cv2.LINE_AA) # Magenta text
+
+            # Nếu điểm là "có hướng", vẽ thêm mũi tên
+            if p_type == "có hướng":
+                arrow_length = 30  # Chiều dài mũi tên (pixel)
+                # Giả định p_angle là độ, 0 độ hướng sang phải, tăng dần theo chiều kim đồng hồ
+                angle_rad = math.radians(p_angle)
+                end_x = int(px + arrow_length * math.cos(angle_rad))
+                end_y = int(py + arrow_length * math.sin(angle_rad))
+                cv2.arrowedLine(img_to_draw_on, (int(px), int(py)), (end_x, end_y), (0, 255, 0), 2, tipLength=0.3) # Mũi tên màu xanh lá
 
         # Draw all paths from danh_sach_duong
         for path_id, (p1_name, p2_name) in danh_sach_duong.items():
